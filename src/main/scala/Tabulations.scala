@@ -15,4 +15,6 @@ object Tabulations {
       .toList
       .sortBy(rr => -rr.frequency)
 
+  val tablulateByUserThenFrequency = tabulateByFrequency _ compose tabulateByUser
+
 }

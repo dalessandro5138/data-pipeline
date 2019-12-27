@@ -1,5 +1,4 @@
 import java.io.{ BufferedWriter, File, FileWriter }
-
 import scala.util.{ Success, Try }
 
 object ReportWriter {
@@ -15,7 +14,7 @@ object ReportWriter {
       padRight(row.frequency.toString) +
       padRight(row.totalUsers.toString) + "\n"
 
-  def writeReport(filename: String)(rows: Seq[ReportRow]): Try[Unit] =
+  def writeReport(filename: String)(rows: Seq[ReportRow]): Try[Int] =
     for {
       file <- Try(new File(filename))
       _    <- if (file.exists) Try(file.delete()) else Success(true)
@@ -29,7 +28,6 @@ object ReportWriter {
             bw.close()
             rows.size
           }
-      _ <- Success(println(s"Wrote $n rows to file: $filename"))
     } yield n
 
 }
