@@ -9,8 +9,8 @@ object LogReader {
 
   private def streamFiles(files: List[String]): Try[Stream[String]] =
     for {
-      fs    <- sequence(files.map(f => Try(getClass.getResourceAsStream(f)).toOption))
-      lines <- Try(fs.flatMap(Source.fromInputStream(_).getLines))
+      fs    <- sequence(files.map(f => Try(Source.fromFile(f)).toOption))
+      lines <- Success(fs.flatMap(_.getLines))
     } yield lines.toStream
 
   private def isValidLine: String => Boolean = s => !s.startsWith("#")
