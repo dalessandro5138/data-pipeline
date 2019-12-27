@@ -1,33 +1,43 @@
 import java.io.{ BufferedWriter, File, FileWriter }
-import scala.util.{ Success, Try }
+import scala.util.{ Failure, Try }
 
 object ReportWriter {
 
   private val HEADERS        = Seq("Ad Id", "Site Id", "Frequency", "Total users that viewed ad this frequently")
   private val PADDED_HEADERS = HEADERS.map(padRight).mkString("", "", "\n")
 
+  private def makeBufferedWriter(outFile: String) =
+    Try {
+      val f = new File(outFile)
+      if (f.exists) f.delete();
+      new BufferedWriter(new FileWriter(f))
+    }
+
   private def padRight(s: String) = s.padTo(40, ' ')
 
   private def formatRow(row: ReportRow): String =
-    padRight(row.adId) +
-      padRight(row.siteId) +
-      padRight(row.frequency.toString) +
-      padRight(row.totalUsers.toString) + "\n"
+    (row.adId ::
+      row.siteId ::
+      row.frequency.toString ::
+      row.totalUsers.toString :: Nil).map(padRight).mkString("", "", "\n")
 
-  def writeReport(filename: String)(rows: Seq[ReportRow]): Try[Int] =
+  private def writeRow(bw: BufferedWriter)(row: String): Unit = bw.write(row)
+
+  def genReportM(filename: String)(rows: Stream[ReportRow]): Try[Int] =
     for {
-      file <- Try(new File(filename))
-      _    <- if (file.exists) Try(file.delete()) else Success(true)
+      bw       <- makeBufferedWriter(filename)
+      writeRoe = writeRow(bw) _
+      writeFn  = writeRoe compose formatRow
       n <- Try {
-            val bw = new BufferedWriter(new FileWriter(file))
-            bw.write(PADDED_HEADERS)
-            for (r <- rows) {
-              bw.write(formatRow(r))
-            }
-            bw.flush()
-            bw.close()
-            rows.size
+            writeRoe(PADDED_HEADERS)
+            rows.foldLeft(0)((s, r) => { writeFn(r); s + 1 })
+          }.recoverWith {
+            case e =>
+              Try { bw.flush(); bw.close() } flatMap { _ =>
+                Failure(e)
+              }
           }
+      _ <- Try { bw.flush(); bw.close() }
     } yield n
 
 }
