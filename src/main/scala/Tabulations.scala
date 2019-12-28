@@ -15,6 +15,6 @@ object Tabulations {
       .toList
       .sortBy(rr => -rr.frequency)
 
-  val tablulateByUserThenFrequency = tabulateByFrequency _ compose tabulateByUser
+  val tablulateByUserThenFrequency: Stream[UserAdView] => Seq[ReportRow] = tabulateByFrequency _ compose tabulateByUser
 
 }
