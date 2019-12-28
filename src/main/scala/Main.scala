@@ -1,7 +1,7 @@
 import java.io.{ BufferedWriter, File, FileWriter }
 import java.nio.file.Path
 import java.nio.file.Paths
-import scala.util.{ Success, Try }
+import scala.util.Try
 
 object Main extends App {
 
@@ -16,19 +16,23 @@ object Main extends App {
       new BufferedWriter(new FileWriter(outFile))
     }, bw => Try { bw.flush(); bw.close() })
 
-  def run(dataSource: DataSource[UserAdView], writerM: BufferedWriter => Writer) =
+  def program(dataSource: DataSource[UserAdView], writer: Writer, headers: Seq[String]) =
     for {
-      _       <- Success(())
       rowsIn  <- dataSource.streamAllData
       rowsOut = Tabulations.tablulateByUserThenFrequency(rowsIn).toStream
-      nRows <- managedBufWriter(out).use { bw =>
-                val writer = writerM(bw)
-                Report.generateReport(writer)(ReportRow.HEADERS, rowsOut)(
-                  StringFormatter.reportRowStringFormatter
+      nRows <- Report.generateReport(
+                writer,
+                StringFormatter.seqStringFormatter,
+                StringFormatter.reportRowStringFormatter
+              )(headers, rowsOut)(
                 )
-              }
     } yield nRows
 
-  run(DataSource.fileDataSource(logFiles), Writer.fileWriter)
-    .fold(e => throw e, n => println(s"Wrote $n rows to file: $out"))
+  def run = managedBufWriter(out).use { bw =>
+    val ds     = DataSource.fileDataSource(logFiles)
+    val writer = Writer.fileWriter(bw)
+    program(ds, writer, ReportRow.HEADERS)
+  }
+
+  run.fold(e => throw e, n => println(s"Wrote $n rows to file: $out"))
 }
