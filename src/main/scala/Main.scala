@@ -16,11 +16,31 @@ object Main extends App {
       new BufferedWriter(new FileWriter(outFile))
     }, bw => Try { bw.flush(); bw.close() })
 
+  def tabulateByUserThenFrequency = {
+
+    def tabUserAdView = Tabulations.mapToIndexThenCountEach[UserAdView, UserAdView](identity)(Some(5))(_)
+
+    def tabFrequency =
+      Tabulations.mapToIndexThenCountEach[(UserAdView, BigInt), AdViewFrequency] {
+        case (uav, i) => AdViewFrequency(uav.adId, uav.siteId, i)
+      }(None)(_)
+
+    tabUserAdView andThen tabFrequency
+  }
+
+  implicit def reportOrdering: Ordering[ReportRow] = Ordering.by[ReportRow, BigInt](r => -r.frequency)
+
+  def makeReport =
+    Report.makeReportFrom[(AdViewFrequency, BigInt), ReportRow] {
+      case (avf, i) => ReportRow(avf.adId, avf.siteId, avf.frequency, i)
+    }(_)
+
   def program(dataSource: DataSource[UserAdView], writer: Writer, headers: Seq[String]) =
     for {
       rowsIn  <- dataSource.streamAllData
-      rowsOut = Tabulations.tablulateByUserThenFrequency(rowsIn).toStream
-      nRows <- Report.generateReport(
+      tabs    = tabulateByUserThenFrequency(rowsIn)
+      rowsOut = makeReport(tabs).toStream
+      nRows <- Report.writeReport(
                 writer,
                 StringFormatter.seqStringFormatter,
                 StringFormatter.reportRowStringFormatter

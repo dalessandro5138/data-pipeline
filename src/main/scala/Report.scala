@@ -2,7 +2,10 @@ import scala.util.Try
 
 object Report {
 
-  def generateReport[A, B](writer: Writer, HF: StringFormatter[A], RF: StringFormatter[B])(headers: A, rows: Stream[B])(
+  def makeReportFrom[A, B: Ordering](toReport: A => B)(s: Stream[A]) =
+    s.map(toReport).toList.sorted
+
+  def writeReport[A, B](writer: Writer, HF: StringFormatter[A], RF: StringFormatter[B])(headers: A, rows: Stream[B])(
     ): Try[Int] =
     for {
       n <- Try {

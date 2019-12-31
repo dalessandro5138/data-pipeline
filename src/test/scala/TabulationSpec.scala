@@ -34,10 +34,9 @@ class TabulationSpec extends Specification with Matchers {
 
   private def testTabulations = {
 
-    val result = Tabulations.tablulateByUserThenFrequency(data)
-    println(result)
+    val result = Main.tabulateByUserThenFrequency andThen Main.makeReport
 
-    result should contain(ReportRow("ad1", "site1", 6, 2))
+    result(data) should contain(ReportRow("ad1", "site1", 6, 2))
   }
 
   private def testProgram = {
