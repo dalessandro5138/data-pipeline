@@ -1,3 +1,5 @@
+package aggregation.system
+
 import scala.util.{ Failure, Try }
 
 case class ManagedResource[A, B](acquire: Try[A], release: A => Try[Unit]) {

@@ -1,6 +1,8 @@
+package aggregation.adviews
+
 import java.io.{ BufferedWriter, File, FileWriter }
-import java.nio.file.Path
-import java.nio.file.Paths
+import java.nio.file.{ Path, Paths }
+import aggregation.system.{ DataSource, ManagedResource, Report, Tabulations, Writer }
 import scala.util.Try
 
 object Main extends App {
@@ -16,7 +18,7 @@ object Main extends App {
       new BufferedWriter(new FileWriter(outFile))
     }, bw => Try { bw.flush(); bw.close() })
 
-  def tabulateByUserThenFrequency = {
+  def tabulateAndReport = {
 
     def tabUserAdView = Tabulations.mapToIndexThenCountEach[UserAdView, UserAdView](identity)(Some(5))(_)
 
@@ -25,31 +27,27 @@ object Main extends App {
         case (uav, i) => AdViewFrequency(uav.adId, uav.siteId, i)
       }(None)(_)
 
-    tabUserAdView andThen tabFrequency
+    def makeReport =
+      Report.makeReportFrom[(AdViewFrequency, BigInt), ReportRow] {
+        case (avf, i) => ReportRow(avf.adId, avf.siteId, avf.frequency, i)
+      }(_)
+
+    tabUserAdView andThen tabFrequency andThen makeReport
   }
-
-  implicit def reportOrdering: Ordering[ReportRow] = Ordering.by[ReportRow, BigInt](r => -r.frequency)
-
-  def makeReport =
-    Report.makeReportFrom[(AdViewFrequency, BigInt), ReportRow] {
-      case (avf, i) => ReportRow(avf.adId, avf.siteId, avf.frequency, i)
-    }(_)
 
   def program(dataSource: DataSource[UserAdView], writer: Writer, headers: Seq[String]) =
     for {
       rowsIn  <- dataSource.streamAllData
-      tabs    = tabulateByUserThenFrequency(rowsIn)
-      rowsOut = makeReport(tabs).toStream
+      rowsOut = tabulateAndReport(rowsIn).toStream
       nRows <- Report.writeReport(
                 writer,
-                StringFormatter.seqStringFormatter,
-                StringFormatter.reportRowStringFormatter
-              )(headers, rowsOut)(
-                )
+                seqStringFormatter,
+                reportRowStringFormatter
+              )(headers, rowsOut)
     } yield nRows
 
   def run = managedBufWriter(out).use { bw =>
-    val ds     = DataSource.fileDataSource(logFiles)
+    val ds     = DataSource.fileDataSource(logFiles)(userAdViewParser)
     val writer = Writer.fileWriter(bw)
     program(ds, writer, ReportRow.HEADERS)
   }

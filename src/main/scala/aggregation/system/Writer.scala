@@ -1,3 +1,5 @@
+package aggregation.system
+
 import java.io.BufferedWriter
 import scala.util.Try
 
