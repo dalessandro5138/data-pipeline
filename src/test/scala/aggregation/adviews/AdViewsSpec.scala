@@ -1,7 +1,7 @@
 package aggregation.adviews
 
 import java.util.UUID
-import aggregation.system.{ DataSource, Writer }
+import aggregation.system.DataSource
 import org.specs2.matcher.Matchers
 import org.specs2.mutable.Specification
 import org.specs2.specification.core.SpecStructure
@@ -44,10 +44,6 @@ class AdViewsSpec extends Specification with Matchers {
         Success(data)
     }
 
-    val wr = new Writer {
-      override def write(a: String): Try[Unit] = Success(())
-    }
-
-    Main.program(ds, wr, Nil) should beSuccessfulTry.withValue(1)
+    Main.program(ds, rows => Success(rows.size)) should beSuccessfulTry.withValue(1)
   }
 }

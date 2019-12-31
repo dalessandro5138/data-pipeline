@@ -7,8 +7,7 @@ object Report {
   def makeReportFrom[A, B: Ordering](toReport: A => B)(s: Stream[A]): List[B] =
     s.map(toReport).toList.sorted
 
-  def writeReport[A, B](writer: Writer, HF: StringFormatter[A], RF: StringFormatter[B])(
-    headers: A,
+  def writeReportToFile[A, B](writer: Writer, HF: StringFormatter[A], RF: StringFormatter[B], headers: A)(
     rows: Stream[B]
   ): Try[Int] =
     for {

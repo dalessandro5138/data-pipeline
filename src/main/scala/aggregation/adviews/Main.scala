@@ -32,24 +32,22 @@ object Main extends App {
         case (avf, i) => ReportRow(avf.adId, avf.siteId, avf.frequency, i)
       }(_)
 
+    //don't put makeReport here
     tabUserAdView andThen tabFrequency andThen makeReport
   }
 
-  def program(dataSource: DataSource[UserAdView], writer: Writer, headers: Seq[String]) =
+  def program(dataSource: DataSource[UserAdView], reporter: Stream[ReportRow] => Try[Int]) =
     for {
       rowsIn  <- dataSource.streamAllData
-      rowsOut = tabulateAndReport(rowsIn).toStream
-      nRows <- Report.writeReport(
-                writer,
-                seqStringFormatter,
-                reportRowStringFormatter
-              )(headers, rowsOut)
+      rowsOut = tabulateAndReport(rowsIn).toStream //abstract this
+      nRows   <- reporter(rowsOut)
     } yield nRows
 
   def run = managedBufWriter(out).use { bw =>
-    val ds     = DataSource.fileDataSource(logFiles)(userAdViewParser)
-    val writer = Writer.fileWriter(bw)
-    program(ds, writer, ReportRow.HEADERS)
+    val ds       = DataSource.fileDataSource(logFiles)(userAdViewParser)
+    val writer   = Writer.fileWriter(bw)
+    val reporter = Report.writeReportToFile(writer, seqStringFormatter, reportRowStringFormatter, ReportRow.HEADERS)(_)
+    program(ds, reporter)
   }
 
   run.fold(e => throw e, n => println(s"Wrote $n rows to file: $out"))
