@@ -3,3 +3,4 @@ tagless final
 use refined types
 load from config
 split into modules
+property test

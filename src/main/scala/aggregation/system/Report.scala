@@ -1,19 +1,31 @@
 package aggregation.system
 
+import java.io.BufferedWriter
+import aggregation.system.StringFormatter.Delimiter
 import scala.util.Try
+
+trait Report[A] {
+  def generateReport(as: Iterable[A]): Try[Int]
+}
 
 object Report {
 
-  def makeReportFrom[A, B: Ordering](toReport: A => B)(s: Stream[A]): List[B] =
-    s.map(toReport).toList.sorted
+  def makeTableReport[A: Ordering: StringFormatter](
+    bw: BufferedWriter
+  )(headers: Seq[String])(delimiter: Delimiter): Report[A] = new Report[A] {
 
-  def writeReportToFile[A, B](writer: Writer, HF: StringFormatter[A], RF: StringFormatter[B], headers: A)(
-    rows: Stream[B]
-  ): Try[Int] =
-    for {
-      n <- Try {
-            writer.write(HF.format(40, headers))
-            rows.foldLeft(0)((s, r) => { writer.write(RF.format(40, r)); s + 1 })
-          }
-    } yield n
+    private def makeDelimitedLine: A => String        = implicitly[StringFormatter[A]].format(_)(delimiter)
+    private def makeHeaderLine: Seq[String] => String = StringFormatter.seqStringFormatter.format(_)(delimiter)
+
+    override def generateReport(as: Iterable[A]): Try[Int] =
+      for {
+        n <- Try {
+              bw.write(makeHeaderLine(headers))
+              as.foldLeft(0) { (s, l) =>
+                { bw.write(makeDelimitedLine(l)); s + 1 }
+              }
+            }
+      } yield n
+  }
+
 }

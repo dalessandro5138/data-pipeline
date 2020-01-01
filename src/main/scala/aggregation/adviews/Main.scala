@@ -2,7 +2,8 @@ package aggregation.adviews
 
 import java.io.{ BufferedWriter, File, FileWriter }
 import java.nio.file.{ Path, Paths }
-import aggregation.system.{ DataSource, ManagedResource, Report, Tabulations, Writer }
+import aggregation.system.StringFormatter.Delimiter.Fixed
+import aggregation.system.{ DataSource, ManagedResource, Report, Tabulations }
 import scala.util.Try
 
 object Main extends App {
@@ -18,35 +19,29 @@ object Main extends App {
       new BufferedWriter(new FileWriter(outFile))
     }, bw => Try { bw.flush(); bw.close() })
 
-  def tabulateAndReport = {
+  def tabByUserThenFrequency = {
 
-    def tabUserAdView = Tabulations.mapToIndexThenCountEach[UserAdView, UserAdView](identity)(Some(5))(_)
+    def tabUserAdView =
+      Tabulations.mapToIndexThenCountEach[UserAdView, UserAdView](identity)(Some(5))(_)
 
-    def tabFrequency =
+    def tabAdViewFrequency =
       Tabulations.mapToIndexThenCountEach[(UserAdView, BigInt), AdViewFrequency] {
         case (uav, i) => AdViewFrequency(uav.adId, uav.siteId, i)
       }(None)(_)
 
-    def makeReport =
-      Report.makeReportFrom[(AdViewFrequency, BigInt), ReportRow] {
-        case (avf, i) => ReportRow(avf.adId, avf.siteId, avf.frequency, i)
-      }(_)
-
-    //don't put makeReport here
-    tabUserAdView andThen tabFrequency andThen makeReport
+    tabUserAdView andThen tabAdViewFrequency
   }
 
-  def program(dataSource: DataSource[UserAdView], reporter: Stream[ReportRow] => Try[Int]) =
+  def program(dataSource: DataSource[UserAdView], reporter: Report[(AdViewFrequency, BigInt)]) =
     for {
       rowsIn  <- dataSource.streamAllData
-      rowsOut = tabulateAndReport(rowsIn).toStream //abstract this
-      nRows   <- reporter(rowsOut)
+      rowsOut = tabByUserThenFrequency(rowsIn)
+      nRows   <- reporter.generateReport(rowsOut)
     } yield nRows
 
   def run = managedBufWriter(out).use { bw =>
     val ds       = DataSource.fileDataSource(logFiles)(userAdViewParser)
-    val writer   = Writer.fileWriter(bw)
-    val reporter = Report.writeReportToFile(writer, seqStringFormatter, reportRowStringFormatter, ReportRow.HEADERS)(_)
+    val reporter = Report.makeTableReport[(AdViewFrequency, BigInt)](bw)(REPORT_HEADERS)(Fixed(40))
     program(ds, reporter)
   }
 

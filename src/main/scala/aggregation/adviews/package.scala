@@ -1,10 +1,13 @@
 package aggregation
 
 import java.util.UUID
+import aggregation.system.StringFormatter.Delimiter
 import aggregation.system.{ Parser, StringFormatter }
 import scala.util.Try
 
 package object adviews {
+
+  val REPORT_HEADERS = Seq("Ad Id", "Site Id", "Frequency", "Total users that viewed ad this frequently")
 
   implicit val userAdViewParser: Parser[UserAdView] = new Parser[UserAdView] {
     import UserAdView.{ AD_ID, GUID, SITE_ID }
@@ -20,22 +23,20 @@ package object adviews {
       }(s)
   }
 
-  implicit val reportRowStringFormatter: StringFormatter[ReportRow] = new StringFormatter[ReportRow] {
-    override def format(pad: Int, a: ReportRow): String =
-      seqStringFormatter.format(
-        pad,
-        a.adId ::
-          a.siteId ::
-          a.frequency.toString ::
-          a.totalUsers.toString :: Nil
-      )
-  }
+  implicit val adViewFreqStringFormatter: StringFormatter[(AdViewFrequency, BigInt)] =
+    new StringFormatter[(AdViewFrequency, BigInt)] {
+      override def format(a: (AdViewFrequency, BigInt))(
+        delimiter: Delimiter
+      ): String = {
+        val (avf, i) = a
+        StringFormatter.seqStringFormatter.format(
+          Seq(avf.adId.toString, avf.siteId.toString, avf.frequency.toString, i.toString)
+        )(delimiter)
+      }
 
-  implicit val seqStringFormatter: StringFormatter[Seq[String]] = new StringFormatter[Seq[String]] {
-    override def format(pad: Int, a: Seq[String]): String = a.map(_.padTo(pad, ' ')).mkString("", "", "\n")
+    }
 
-  }
-
-  implicit val reportOrdering: Ordering[ReportRow] = Ordering.by[ReportRow, BigInt](r => -r.frequency)
+  implicit val reportOrdering: Ordering[(AdViewFrequency, BigInt)] =
+    Ordering.by[(AdViewFrequency, BigInt), BigInt] { case (freq, i) => -freq.frequency }
 
 }

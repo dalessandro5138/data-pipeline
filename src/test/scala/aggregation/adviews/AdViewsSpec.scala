@@ -36,7 +36,7 @@ class AdViewsSpec extends Specification with Matchers {
   }
 
   private def testTabulations =
-    Main.tabulateAndReport(data) should contain(ReportRow("ad1", "site1", 6, 2))
+    Main.tabByUserThenFrequency(data) should contain((AdViewFrequency("ad1", "site1", 6), BigInt(2)))
 
   private def testProgram = {
     val ds = new DataSource[UserAdView] {
