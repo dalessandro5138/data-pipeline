@@ -1,17 +1,14 @@
 package aggregation.adviews
 
 import java.util.UUID
-import aggregation.system.DataSource
 import org.specs2.matcher.Matchers
 import org.specs2.mutable.Specification
 import org.specs2.specification.core.SpecStructure
-import scala.util.{ Success, Try }
 
 class AdViewsSpec extends Specification with Matchers {
   override def is: SpecStructure =
     s2"""  
-      Tabulate by user then frequency and sort     $testTabulations
-      Test program with mock datasource and writer $testProgram
+      Tabulate by user then frequency $testTabulations
       """
 
   private val data: Stream[UserAdView] = {
@@ -38,12 +35,4 @@ class AdViewsSpec extends Specification with Matchers {
   private def testTabulations =
     Main.tabByUserThenFrequency(data) should contain((AdViewFrequency("ad1", "site1", 6), BigInt(2)))
 
-  private def testProgram = {
-    val ds = new DataSource[UserAdView] {
-      override def streamAllData: Try[Stream[UserAdView]] =
-        Success(data)
-    }
-
-    Main.program(ds, rows => Success(rows.size)) should beSuccessfulTry.withValue(1)
-  }
 }

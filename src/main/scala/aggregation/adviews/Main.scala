@@ -3,7 +3,7 @@ package aggregation.adviews
 import java.io.{ BufferedWriter, File, FileWriter }
 import java.nio.file.{ Path, Paths }
 import aggregation.system.StringFormatter.Delimiter.Fixed
-import aggregation.system.{ DataSource, ManagedResource, Report, Tabulations }
+import aggregation.system.{ DataSource, ManagedResource, Pipeline, Report, Tabulations }
 import scala.util.Try
 
 object Main extends App {
@@ -32,17 +32,10 @@ object Main extends App {
     tabUserAdView andThen tabAdViewFrequency
   }
 
-  def program(dataSource: DataSource[UserAdView], reporter: Report[(AdViewFrequency, BigInt)]) =
-    for {
-      rowsIn  <- dataSource.streamAllData
-      rowsOut = tabByUserThenFrequency(rowsIn)
-      nRows   <- reporter.generateReport(rowsOut)
-    } yield nRows
-
   def run = managedBufWriter(out).use { bw =>
     val ds       = DataSource.fileDataSource(logFiles)(userAdViewParser)
     val reporter = Report.makeTableReport[(AdViewFrequency, BigInt)](bw)(REPORT_HEADERS)(Fixed(40))
-    program(ds, reporter)
+    Pipeline.build(ds, tabByUserThenFrequency, reporter)
   }
 
   run.fold(e => throw e, n => println(s"Wrote $n rows to file: $out"))
