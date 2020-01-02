@@ -1,7 +1,6 @@
 package aggregation
 
 import java.util.UUID
-import aggregation.system.StringFormatter.Delimiter
 import aggregation.system.{ Parser, StringFormatter }
 import scala.util.Try
 
@@ -25,15 +24,12 @@ package object adviews {
 
   implicit val adViewFreqStringFormatter: StringFormatter[(AdViewFrequency, BigInt)] =
     new StringFormatter[(AdViewFrequency, BigInt)] {
-      override def format(a: (AdViewFrequency, BigInt))(
-        delimiter: Delimiter
-      ): String = {
+      override def tokenize(
+        a: (AdViewFrequency, BigInt)
+      ): Seq[String] = {
         val (avf, i) = a
-        StringFormatter.seqStringFormatter.format(
-          Seq(avf.adId.toString, avf.siteId.toString, avf.frequency.toString, i.toString)
-        )(delimiter)
+        Seq(avf.adId.toString, avf.siteId.toString, avf.frequency.toString, i.toString)
       }
-
     }
 
   implicit val reportOrdering: Ordering[(AdViewFrequency, BigInt)] =

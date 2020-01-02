@@ -1,5 +1,6 @@
 package aggregation.system
 
+import java.io.{ BufferedWriter, File, FileWriter }
 import scala.util.{ Failure, Try }
 
 case class ManagedResource[A, B](acquire: Try[A], release: A => Try[Unit]) {
@@ -14,4 +15,12 @@ case class ManagedResource[A, B](acquire: Try[A], release: A => Try[Unit]) {
           }
       _ <- release(a)
     } yield b
+}
+
+object ManagedResource {
+  def bufferedWriter(outFile: File): ManagedResource[BufferedWriter, Int] =
+    ManagedResource[BufferedWriter, Int](Try {
+      if (outFile.exists) outFile.delete();
+      new BufferedWriter(new FileWriter(outFile))
+    }, bw => Try { bw.flush(); bw.close() })
 }
