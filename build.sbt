@@ -16,7 +16,7 @@ lazy val root =
   project
     .in(file("."))
     .settings(
-      name := "data-aggregation",
+      name := "data-pipeline",
       libraryDependencies ++= deps.specs2,
       fork := true,
       fork in Test := true
