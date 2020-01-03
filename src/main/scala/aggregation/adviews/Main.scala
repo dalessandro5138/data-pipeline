@@ -1,16 +1,14 @@
 package aggregation.adviews
 
 import java.io.File
-import java.nio.file.{ Path, Paths }
 import aggregation.system.StringFormatter.Delimiter.Fixed
 import aggregation.system.{ DataSource, ManagedResource, Pipeline, Report, Tabulations }
+import scala.util.{ Success, Try }
 
 object Main extends App {
 
-  lazy val root: Path           = Paths.get(System.getProperty("user.dir") + "/")
-  lazy val data: Path           = root.resolve(Paths.get("data/"))
-  lazy val logFiles: List[Path] = ("ad_data.1.log" :: "ad_data.2.log" :: Nil).map(data.resolve)
-  lazy val out: File            = root.resolve("output.report").toFile
+  lazy val logFiles: List[File] = ???
+  lazy val out: File            = ???
 
   def tabByUserThenFrequency = {
 
@@ -25,8 +23,11 @@ object Main extends App {
     tabUserAdView andThen tabAdViewFrequency
   }
 
+  val source: List[File] => Try[Stream[String]] =
+    ManagedResource.bufferedSource(_).use(s => Success(s.toStream.flatMap(_.getLines().toStream)))
+  val ds = DataSource.fileDataSource(logFiles)(source)(userAdViewParser)
+
   def run = ManagedResource.bufferedWriter(out).use { bw =>
-    val ds       = DataSource.fileDataSource(logFiles)(userAdViewParser)
     val reporter = Report.makeTableReport[(AdViewFrequency, BigInt)](bw)(REPORT_HEADERS)(Fixed(40))
     Pipeline.build(ds, tabByUserThenFrequency, reporter)
   }
