@@ -1,4 +1,4 @@
-package aggregation.system
+package pipeline.system
 
 trait Parser[A] {
   def parseRow(s: String): Option[A]

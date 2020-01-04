@@ -1,4 +1,4 @@
-package aggregation.system
+package pipeline.system
 
 import java.io.File
 import scala.util.{ Success, Try }

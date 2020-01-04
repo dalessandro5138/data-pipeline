@@ -1,4 +1,4 @@
-package aggregation.adviews
+package pipeline.adviews
 
 import java.util.UUID
 import org.specs2.matcher.Matchers

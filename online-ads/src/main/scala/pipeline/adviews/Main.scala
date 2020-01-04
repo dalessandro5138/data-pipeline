@@ -1,8 +1,8 @@
-package aggregation.adviews
+package pipeline.adviews
 
 import java.io.File
-import aggregation.system.StringFormatter.Delimiter.Fixed
-import aggregation.system.{ DataSource, ManagedResource, Pipeline, Report, Tabulations }
+import pipeline.system.StringFormatter.Delimiter.Fixed
+import pipeline.system.{ DataSource, ManagedResource, Pipeline, Report, Tabulations }
 import scala.util.{ Success, Try }
 
 object Main extends App {

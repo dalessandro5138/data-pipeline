@@ -1,7 +1,7 @@
-package aggregation
+package pipeline
 
 import java.util.UUID
-import aggregation.system.{ Parser, StringFormatter }
+import pipeline.system.{ Parser, StringFormatter }
 import scala.util.Try
 
 package object adviews {

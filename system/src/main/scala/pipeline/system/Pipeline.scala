@@ -1,4 +1,4 @@
-package aggregation.system
+package pipeline.system
 
 import scala.util.Try
 

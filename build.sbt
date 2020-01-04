@@ -21,3 +21,25 @@ lazy val root =
       fork := true,
       fork in Test := true
     )
+    .aggregate(onlineAds, system)
+
+lazy val onlineAds =
+  project
+    .in(file("online-ads"))
+    .settings(
+      name := "online-ads",
+      libraryDependencies ++= deps.specs2,
+      fork := true,
+      fork in Test := true
+    )
+    .dependsOn(system)
+
+lazy val system =
+  project
+    .in(file("system"))
+    .settings(
+      name := "system",
+      libraryDependencies ++= deps.specs2,
+      fork := true,
+      fork in Test := true
+    )

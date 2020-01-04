@@ -1,4 +1,4 @@
-package aggregation.system
+package pipeline.system
 
 import java.io.{ BufferedWriter, File, FileWriter }
 import scala.io.{ BufferedSource, Codec, Source }

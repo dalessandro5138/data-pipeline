@@ -1,4 +1,4 @@
-package aggregation.system
+package pipeline.system
 
 import org.specs2.Specification
 import org.specs2.matcher.Matchers

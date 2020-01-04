@@ -1,7 +1,7 @@
-package aggregation.system
+package pipeline.system
 
 import java.io.Writer
-import aggregation.system.StringFormatter.Delimiter
+import pipeline.system.StringFormatter.Delimiter
 import org.specs2.Specification
 import org.specs2.specification.core.SpecStructure
 
