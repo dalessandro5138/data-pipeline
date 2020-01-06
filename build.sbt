@@ -4,11 +4,22 @@ scalaVersion := "2.12.8"
 lazy val deps = new {
 
   val specs2V = "4.8.1"
+  val zioV    = "1.0.0-RC17"
 
   val specs2 = Seq(
-    "org.specs2" %% "specs2-core",
-    "org.specs2" %% "specs2-matcher"
-  ).map(_ % specs2V)
+    "specs2-core",
+    "specs2-matcher"
+  ).map("org.specs2" %% _ % specs2V % "test")
+
+  val cats           = "org.typelevel" %% "cats-core"        % "2.1.0"
+  val catsEffect     = "org.typelevel" %% "cats-effect"      % "2.0.0"
+  val zioInteropCats = "dev.zio"       %% "zio-interop-cats" % "2.0.0.0-RC10"
+
+  val common = specs2 ++ Seq(cats)
+
+  val zio = Seq(
+    "zio"
+  ).map("dev.zio" %% _ % zioV)
 
 }
 
@@ -28,9 +39,11 @@ lazy val onlineAds =
     .in(file("online-ads"))
     .settings(
       name := "online-ads",
-      libraryDependencies ++= deps.specs2,
+      libraryDependencies ++= deps.common ++ deps.zio ++ Seq(deps.zioInteropCats, deps.catsEffect),
+      addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full),
       fork := true,
-      fork in Test := true
+      fork in Test := true,
+      scalacOptions ++= compilerOpts
     )
     .dependsOn(system)
 
@@ -39,7 +52,12 @@ lazy val system =
     .in(file("system"))
     .settings(
       name := "system",
-      libraryDependencies ++= deps.specs2,
+      libraryDependencies ++= deps.common ++ Seq(deps.catsEffect),
+      addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full),
       fork := true,
-      fork in Test := true
+      fork in Test := true,
+      scalacOptions ++= compilerOpts
     )
+
+lazy val compilerOpts =
+  Seq("-Ypartial-unification")

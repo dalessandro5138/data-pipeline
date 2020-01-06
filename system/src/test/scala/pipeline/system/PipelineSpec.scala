@@ -3,7 +3,8 @@ package pipeline.system
 import org.specs2.Specification
 import org.specs2.matcher.Matchers
 import org.specs2.specification.core.SpecStructure
-import scala.util.{ Success, Try }
+import cats.Id
+import pipeline.MonadErrorImplicits._
 
 class PipelineSpec extends Specification with Matchers {
   override def is: SpecStructure =
@@ -12,14 +13,14 @@ class PipelineSpec extends Specification with Matchers {
       """
 
   private def testPipeline = {
-    val ds = new DataSource[String] {
-      override def streamAllData: Try[Stream[String]] =
-        Success(Stream("1", "2", "3"))
+    val ds = new DataSource[Id, String] {
+      override def streamAllData: Id[Stream[String]] =
+        Stream("1", "2", "3")
     }
 
     val result =
-      Pipeline.build[String, Int](ds, _.map(Integer.parseInt), rows => Success(rows.size))
+      Pipeline.build[Id, String, Int](ds, _.map(Integer.parseInt), rows => rows.size)
 
-    result should beSuccessfulTry(3)
+    result shouldEqual 3
   }
 }

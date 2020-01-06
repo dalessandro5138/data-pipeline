@@ -2,38 +2,29 @@ package pipeline.system
 
 import java.io.{ BufferedWriter, FileWriter }
 import java.nio.file.Path
+import cats.MonadError
 import scala.io.{ BufferedSource, Source }
-import scala.util.{ Failure, Success, Try }
-
-case class ManagedResource[A, B] private (private val acquire: Try[A], private val release: A => Try[Unit]) {
-  def use(f: A => Try[B]): Try[B] =
-    for {
-      a <- acquire
-      b <- f(a).recoverWith {
-            case e =>
-              release(a) flatMap { _ =>
-                Failure(e)
-              }
-          }
-      _ <- release(a)
-    } yield b
-}
+import cats.effect.Resource
+import cats.implicits._
 
 object ManagedResource {
-  def bufferedWriter[A](dest: Path): ManagedResource[BufferedWriter, A] =
-    ManagedResource[BufferedWriter, A](Try {
+  def bufferedWriter[F[_]](dest: Path)(implicit ME: MonadError[F, Throwable]): Resource[F, BufferedWriter] =
+    Resource(ME.catchNonFatal {
       val destFile = dest.toFile
       if (destFile.exists) destFile.delete();
-      new BufferedWriter(new FileWriter(destFile))
-    }, bw => Try { bw.flush(); bw.close() })
+      val bw = new BufferedWriter(new FileWriter(destFile))
+      (bw, ME.point { bw.flush(); bw.close() })
+    })
 
-  def bufferedSource[A](sourceFiles: List[Path]): ManagedResource[List[BufferedSource], A] = {
+  def bufferedSource[F[_]](
+    sourceFiles: List[Path]
+  )(implicit ME: MonadError[F, Throwable]): Resource[F, List[BufferedSource]] = {
 
-    def sequence[T](l: List[Option[T]]): Try[List[T]] =
-      if (l.exists(_.isEmpty)) Failure(new Exception("error loading file(s)")) else Success(l.flatten)
+    val acquire = (sourceFiles
+      .map(f => ME.catchNonFatal(Source.fromFile(f.toFile)))
+      .sequence)
+      .map(as => (as, ME.point(as.foreach(_.close))))
 
-    val acquire = sequence(sourceFiles.map(f => Try(Source.fromFile(f.toFile))).map(_.toOption))
-
-    ManagedResource[List[BufferedSource], A](acquire, bs => Try(bs.foreach(_.close())))
+    Resource(acquire)
   }
 }

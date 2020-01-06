@@ -1,10 +1,14 @@
 package pipeline.adviews
 
 import java.nio.file.Path
+
+import cats.effect.Bracket
+import cats.MonadError
+import cats.implicits._
 import pipeline.system.StringFormatter.Delimiter.Fixed
 import pipeline.system.{ DataSource, ManagedResource, Pipeline, Report, Tabulations }
-import scala.util.{ Success, Try }
 import pipeline.system
+import zio.{ DefaultRuntime, Task }
 
 object Main extends App {
 
@@ -21,18 +25,20 @@ object Main extends App {
     tabUserAdView andThen tabAdViewFrequency
   }
 
-  val source: List[Path] => Try[Stream[String]] =
-    ManagedResource.bufferedSource(_).use(s => Success(s.toStream.flatMap(_.getLines().toStream)))
+  def source[F[_]](
+    paths: List[Path]
+  )(implicit ME: MonadError[F, Throwable], B: Bracket[F, Throwable]): F[Stream[String]] =
+    ManagedResource.bufferedSource[F](paths).use(s => ME.point(s.toStream.flatMap(_.getLines().toStream)))
 
-  def run =
+  def run[F[_]](implicit ME: MonadError[F, Throwable], B: Bracket[F, Throwable]) =
     for {
-      c  <- system.Config.loadConfig("config")(AppConfig.fromProps)
-      ds = DataSource.fileDataSource(c.sourceFiles)(source)(userAdViewParser)
-      n <- ManagedResource.bufferedWriter(c.reportDestination).use { bw =>
-            val reporter = Report.makeTableReport[(AdViewFrequency, BigInt)](bw)(REPORT_HEADERS)(Fixed(40))
-            Pipeline.build(ds, tabByUserThenFrequency, reporter)
+      c  <- system.Config.loadConfig[F, AppConfig]("config")(AppConfig.fromProps[F])
+      ds = DataSource.fileDataSource[F, UserAdView](c.sourceFiles)(source[F])
+      n <- ManagedResource.bufferedWriter(c.reportDestination)(ME).use { bw =>
+            val reporter = Report.makeTableReport[F, (AdViewFrequency, BigInt)](bw)(REPORT_HEADERS)(Fixed(40))
+            Pipeline.build[F, UserAdView, (AdViewFrequency, BigInt)](ds, tabByUserThenFrequency, reporter)
           }
     } yield n
 
-  run.fold(e => throw e, n => println(s"Wrote $n rows to destination file"))
+  new DefaultRuntime {}.unsafeRun(run[Task].fold(e => throw e, n => println(s"Wrote $n rows to destination file")))
 }

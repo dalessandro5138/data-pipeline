@@ -1,9 +1,14 @@
 package pipeline.system
 
-import scala.util.Try
+import cats.implicits._
+import cats.MonadError
 
 object Pipeline {
-  def build[A, B](source: DataSource[A], stream: Stream[A] => Stream[B], sink: Report[B]): Try[Int] =
+  def build[F[_], A, B](
+    source: DataSource[F, A],
+    stream: Stream[A] => Stream[B],
+    sink: Report[F, B]
+  )(implicit ME: MonadError[F, Throwable]): F[Int] =
     for {
       in  <- source.streamAllData
       out = stream(in)

@@ -5,8 +5,8 @@ import java.nio.file.{ Path, Paths }
 import org.specs2.Specification
 import org.specs2.matcher.Matchers
 import org.specs2.specification.core.SpecStructure
-
-import scala.util.Success
+import cats.Id
+import pipeline.MonadErrorImplicits._
 
 class FileDataSourceSpec extends Specification with Matchers {
   override def is: SpecStructure =
@@ -31,12 +31,12 @@ class FileDataSourceSpec extends Specification with Matchers {
       }(s)
   }
 
-  val testData                             = Stream.fill(25)("id1\tA1\tB1\tC1\tD1\n")
-  val testSource                           = (_: List[Path]) => Success(testData)
-  val testFile: Path                       = Paths.get("test.file")
-  val fileDataSource: DataSource[TestData] = DataSource.fileDataSource(testFile :: Nil)(testSource)
+  val testData                                     = Stream.fill(25)("id1\tA1\tB1\tC1\tD1\n")
+  val testSource: List[Path] => Id[Stream[String]] = _ => testData
+  val testFile: Path                               = Paths.get("test.file")
+  val fileDataSource: DataSource[Id, TestData]     = DataSource.fileDataSource[Id, TestData](testFile :: Nil)(testSource)
 
-  val maybeData = fileDataSource.streamAllData.map(_.size)
+  val maybeData = fileDataSource.streamAllData.size
 
-  val testSize = maybeData should beASuccessfulTry(25)
+  val testSize = maybeData shouldEqual 25
 }
