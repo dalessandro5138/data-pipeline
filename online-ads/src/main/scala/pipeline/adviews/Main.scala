@@ -5,6 +5,7 @@ import pipeline.system.StringFormatter.Delimiter.Fixed
 import pipeline.system.{ DataSource, ManagedResource, Pipeline, Report, Tabulations }
 import scala.util.{ Success, Try }
 import pipeline.system
+
 object Main extends App {
 
   def tabByUserThenFrequency = {

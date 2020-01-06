@@ -20,6 +20,6 @@ class PipelineSpec extends Specification with Matchers {
     val result =
       Pipeline.build[String, Int](ds, _.map(Integer.parseInt), rows => Success(rows.size))
 
-    result should beSuccessfulTry.withValue(3)
+    result should beSuccessfulTry(3)
   }
 }

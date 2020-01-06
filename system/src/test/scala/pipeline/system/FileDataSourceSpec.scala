@@ -36,7 +36,7 @@ class FileDataSourceSpec extends Specification with Matchers {
   val testFile: Path                       = Paths.get("test.file")
   val fileDataSource: DataSource[TestData] = DataSource.fileDataSource(testFile :: Nil)(testSource)
 
-  val maybeData = fileDataSource.streamAllData
+  val maybeData = fileDataSource.streamAllData.map(_.size)
 
-  val testSize = maybeData.get.size shouldEqual 25
+  val testSize = maybeData should beASuccessfulTry(25)
 }
