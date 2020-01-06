@@ -1,7 +1,8 @@
 package pipeline.system
 
-import java.io.{ BufferedWriter, File, FileWriter }
-import scala.io.{ BufferedSource, Codec, Source }
+import java.io.{ BufferedWriter, FileWriter }
+import java.nio.file.Path
+import scala.io.{ BufferedSource, Source }
 import scala.util.{ Failure, Success, Try }
 
 case class ManagedResource[A, B] private (private val acquire: Try[A], private val release: A => Try[Unit]) {
@@ -19,18 +20,19 @@ case class ManagedResource[A, B] private (private val acquire: Try[A], private v
 }
 
 object ManagedResource {
-  def bufferedWriter[A](outFile: File): ManagedResource[BufferedWriter, A] =
+  def bufferedWriter[A](dest: Path): ManagedResource[BufferedWriter, A] =
     ManagedResource[BufferedWriter, A](Try {
-      if (outFile.exists) outFile.delete();
-      new BufferedWriter(new FileWriter(outFile))
+      val destFile = dest.toFile
+      if (destFile.exists) destFile.delete();
+      new BufferedWriter(new FileWriter(destFile))
     }, bw => Try { bw.flush(); bw.close() })
 
-  def bufferedSource[A](sourceFiles: List[File]): ManagedResource[List[BufferedSource], A] = {
+  def bufferedSource[A](sourceFiles: List[Path]): ManagedResource[List[BufferedSource], A] = {
 
     def sequence[T](l: List[Option[T]]): Try[List[T]] =
       if (l.exists(_.isEmpty)) Failure(new Exception("error loading file(s)")) else Success(l.flatten)
 
-    val acquire = sequence(sourceFiles.map(f => Try(Source.fromFile(f))).map(_.toOption))
+    val acquire = sequence(sourceFiles.map(f => Try(Source.fromFile(f.toFile))).map(_.toOption))
 
     ManagedResource[List[BufferedSource], A](acquire, bs => Try(bs.foreach(_.close())))
   }

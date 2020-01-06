@@ -1,6 +1,6 @@
 package pipeline.system
 
-import java.io.File
+import java.nio.file.Path
 import scala.util.{ Success, Try }
 
 trait DataSource[A] {
@@ -9,7 +9,7 @@ trait DataSource[A] {
 
 object DataSource {
 
-  def fileDataSource[A: Parser](files: List[File])(source: List[File] => Try[Stream[String]]): DataSource[A] =
+  def fileDataSource[A: Parser](files: List[Path])(source: List[Path] => Try[Stream[String]]): DataSource[A] =
     new DataSource[A] {
 
       private def isValidLine: String => Boolean = s => !s.startsWith("#")

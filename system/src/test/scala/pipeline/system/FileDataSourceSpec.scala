@@ -1,9 +1,11 @@
 package pipeline.system
 
-import java.io.File
+import java.nio.file.{ Path, Paths }
+
 import org.specs2.Specification
 import org.specs2.matcher.Matchers
 import org.specs2.specification.core.SpecStructure
+
 import scala.util.Success
 
 class FileDataSourceSpec extends Specification with Matchers {
@@ -30,8 +32,8 @@ class FileDataSourceSpec extends Specification with Matchers {
   }
 
   val testData                             = Stream.fill(25)("id1\tA1\tB1\tC1\tD1\n")
-  val testSource                           = (_: List[File]) => Success(testData)
-  val testFile: File                       = new File("test.file")
+  val testSource                           = (_: List[Path]) => Success(testData)
+  val testFile: Path                       = Paths.get("test.file")
   val fileDataSource: DataSource[TestData] = DataSource.fileDataSource(testFile :: Nil)(testSource)
 
   val maybeData = fileDataSource.streamAllData

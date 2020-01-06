@@ -1,4 +1,3 @@
 tagless final
 use refined types
-load from config
 property test
