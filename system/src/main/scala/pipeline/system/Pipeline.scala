@@ -1,14 +1,14 @@
 package pipeline.system
 
 import cats.implicits._
-import cats.MonadError
+import cats.Monad
 
 object Pipeline {
   def build[F[_], A, B](
     source: DataSource[F, A],
     stream: Stream[A] => Stream[B],
     sink: Report[F, B]
-  )(implicit ME: MonadError[F, Throwable]): F[Int] =
+  )(implicit M: Monad[F]): F[Int] =
     for {
       in  <- source.streamAllData
       out = stream(in)

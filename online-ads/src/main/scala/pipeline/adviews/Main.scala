@@ -2,7 +2,6 @@ package pipeline.adviews
 
 import java.nio.file.Path
 import cats.effect.Bracket
-import cats.MonadError
 import cats.implicits._
 import pipeline.system.StringFormatter.Delimiter.Fixed
 import pipeline.system.{ DataSource, ManagedResource, Pipeline, Report, Tabulations }
@@ -29,7 +28,7 @@ object Main extends App {
   )(implicit B: Bracket[F, Throwable]): F[Stream[String]] =
     ManagedResource.bufferedSource[F](paths).use(s => B.point(s.toStream.flatMap(_.getLines().toStream)))
 
-  def run[F[_]](implicit ME: MonadError[F, Throwable], B: Bracket[F, Throwable]) =
+  def run[F[_]](implicit B: Bracket[F, Throwable]) =
     for {
       c  <- system.Config.loadConfig[F, AppConfig]("config")(AppConfig.fromProps[F])
       ds = DataSource.fileDataSource[F, UserAdView](c.sourceFiles)(source[F])

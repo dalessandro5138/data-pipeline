@@ -1,10 +1,8 @@
 package pipeline.system
 
 import java.io.Writer
-
 import cats.MonadError
 import pipeline.system.StringFormatter.Delimiter
-
 import cats.implicits._
 
 trait Report[F[_], A] {
