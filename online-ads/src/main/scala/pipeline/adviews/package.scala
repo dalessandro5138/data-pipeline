@@ -1,11 +1,9 @@
 package pipeline
 
 import java.util.UUID
-
 import pipeline.system.{ Parser, StringFormatter }
-
 import scala.util.Try
-import cats.MonadError
+import cats.effect.ExitCase.Completed
 import cats.effect.{ Bracket, ExitCase }
 import zio.Task
 
@@ -40,23 +38,19 @@ package object adviews {
   implicit val reportOrdering: Ordering[(AdViewFrequency, BigInt)] =
     Ordering.by[(AdViewFrequency, BigInt), BigInt] { case (freq, i) => -freq.frequency }
 
-  implicit val taskMonadError: MonadError[Task, Throwable] = new MonadError[Task, Throwable] {
-    override def raiseError[A](e: Throwable): Task[A]                              = ???
-    override def handleErrorWith[A](fa: Task[A])(f: Throwable => Task[A]): Task[A] = ???
-    override def pure[A](x: A): Task[A]                                            = ???
-    override def flatMap[A, B](fa: Task[A])(f: A => Task[B]): Task[B]              = ???
-    override def tailRecM[A, B](a: A)(f: A => Task[Either[A, B]]): Task[B]         = ???
-  }
-
   implicit val taskBracket: Bracket[Task, Throwable] = new Bracket[Task, Throwable] {
     override def bracketCase[A, B](acquire: Task[A])(use: A => Task[B])(
       release: (A, ExitCase[Throwable]) => Task[Unit]
-    ): Task[B]                                                                     = ???
+    ): Task[B]                                                                     = acquire.bracket(a => release(a, Completed).orDie)(use)
     override def raiseError[A](e: Throwable): Task[A]                              = Task.fail(e)
     override def handleErrorWith[A](fa: Task[A])(f: Throwable => Task[A]): Task[A] = fa.absorb
     override def pure[A](x: A): Task[A]                                            = Task(x)
     override def flatMap[A, B](fa: Task[A])(f: A => Task[B]): Task[B]              = fa.flatMap(f)
-    override def tailRecM[A, B](a: A)(f: A => Task[Either[A, B]]): Task[B]         = ???
+    override def tailRecM[A, B](a: A)(f: A => Task[Either[A, B]]): Task[B] =
+      f(a) flatMap {
+        case Right(b) => Task.succeed(b)
+        case Left(a)  => tailRecM(a)(f)
+      }
   }
 
 }

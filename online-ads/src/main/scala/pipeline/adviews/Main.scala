@@ -1,7 +1,6 @@
 package pipeline.adviews
 
 import java.nio.file.Path
-
 import cats.effect.Bracket
 import cats.MonadError
 import cats.implicits._
@@ -27,14 +26,14 @@ object Main extends App {
 
   def source[F[_]](
     paths: List[Path]
-  )(implicit ME: MonadError[F, Throwable], B: Bracket[F, Throwable]): F[Stream[String]] =
-    ManagedResource.bufferedSource[F](paths).use(s => ME.point(s.toStream.flatMap(_.getLines().toStream)))
+  )(implicit B: Bracket[F, Throwable]): F[Stream[String]] =
+    ManagedResource.bufferedSource[F](paths).use(s => B.point(s.toStream.flatMap(_.getLines().toStream)))
 
   def run[F[_]](implicit ME: MonadError[F, Throwable], B: Bracket[F, Throwable]) =
     for {
       c  <- system.Config.loadConfig[F, AppConfig]("config")(AppConfig.fromProps[F])
       ds = DataSource.fileDataSource[F, UserAdView](c.sourceFiles)(source[F])
-      n <- ManagedResource.bufferedWriter(c.reportDestination)(ME).use { bw =>
+      n <- ManagedResource.bufferedWriter(c.reportDestination)(B).use { bw =>
             val reporter = Report.makeTableReport[F, (AdViewFrequency, BigInt)](bw)(REPORT_HEADERS)(Fixed(40))
             Pipeline.build[F, UserAdView, (AdViewFrequency, BigInt)](ds, tabByUserThenFrequency, reporter)
           }

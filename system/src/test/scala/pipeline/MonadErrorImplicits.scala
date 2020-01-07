@@ -1,4 +1,5 @@
 package pipeline
+
 import cats.{ Id, MonadError }
 
 object MonadErrorImplicits {
@@ -7,6 +8,9 @@ object MonadErrorImplicits {
     override def handleErrorWith[A](fa: Id[A])(f: Throwable => Id[A]): Id[A] = fa
     override def pure[A](x: A): Id[A]                                        = x
     override def flatMap[A, B](fa: Id[A])(f: A => Id[B]): Id[B]              = fa match { case a => f(a) }
-    override def tailRecM[A, B](a: A)(f: A => Id[Either[A, B]]): Id[B]       = f(a).right.get
+    override def tailRecM[A, B](a: A)(f: A => Id[Either[A, B]]): Id[B] = f(a) match {
+      case Left(a)  => tailRecM(a)(f)
+      case Right(b) => b
+    }
   }
 }
