@@ -1,2 +1,6 @@
 .idea
 target
+.metals/
+.bloop/
+project/metals.sbt
+.DS_Store
