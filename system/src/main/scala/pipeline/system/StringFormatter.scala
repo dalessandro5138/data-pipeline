@@ -1,6 +1,6 @@
 package pipeline.system
 
-import pipeline.system.StringFormatter.Delimiter.{ Comma, Fixed, Tab }
+import pipeline.system.StringFormatter.Delimiter.{ Comma, Fixed, NoDel, Tab }
 
 trait StringFormatter[A] {
   def format(a: A)(delimiter: StringFormatter.Delimiter): String = {
@@ -14,6 +14,7 @@ trait StringFormatter[A] {
     case Comma    => a.mkString("", ",", "\n")
     case Tab      => a.mkString("", "\t", "\n")
     case Fixed(i) => a.map(_.padTo(i, ' ')).mkString("", "", "\n")
+    case NoDel    => a.mkString("")
   }
 
   def tokenize(a: A): Seq[String]
@@ -26,7 +27,7 @@ object StringFormatter {
     case object Comma            extends Delimiter
     case object Tab              extends Delimiter
     case class Fixed(chars: Int) extends Delimiter
-    case object None             extends Delimiter
+    case object NoDel            extends Delimiter
   }
 
 }
